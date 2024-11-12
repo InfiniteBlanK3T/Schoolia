@@ -1,92 +1,73 @@
-// src/components/common/display/Badge.tsx
-import React from 'react';
-import {
-  Badge as MuiBadge,
-  BadgeProps as MuiBadgeProps,
-  BadgePropsVariantOverrides,
-  styled,
-} from '@mui/material';
-import { OverridableStringUnion } from '@mui/types';
+import { styled } from '@mui/material/styles';
+import MuiChip from '@mui/material/Chip';
+import { BadgeProps, Status, Priority } from './types';
+import { ComponentProps } from 'react';
 
-export type BadgeVariant = 'success' | 'warning' | 'error' | 'info';
-export type BadgeSize = 'small' | 'medium' | 'large';
+// Use ComponentProps to get the exact props type from MuiChip
+type MuiChipProps = ComponentProps<typeof MuiChip>;
 
-declare module '@mui/material/Badge' {
-  interface BadgePropsVariantOverrides {
-    success: true;
-    warning: true;
-    error: true;
-    info: true;
-  }
+// Define props specifically for styling
+interface StyledChipProps extends Omit<MuiChipProps, 'status'> {
+  $status?: Status;
+  $priority?: Priority;
 }
 
-export interface BadgeProps extends Omit<MuiBadgeProps, 'variant'> {
-  variant?: OverridableStringUnion<BadgeVariant, BadgePropsVariantOverrides>;
-  size?: BadgeSize;
-}
+const StyledChip = styled(MuiChip, {
+  shouldForwardProp: (prop) => typeof prop === 'string' && !prop.startsWith('$'),
+})<StyledChipProps>(({ theme, $status, $priority }) => ({
+  '&.status-new': {
+    backgroundColor: theme.palette.info.light,
+    color: theme.palette.info.contrastText,
+  },
+  '&.status-open': {
+    backgroundColor: theme.palette.warning.light,
+    color: theme.palette.warning.contrastText,
+  },
+  '&.status-in-progress': {
+    backgroundColor: theme.palette.primary.light,
+    color: theme.palette.primary.contrastText,
+  },
+  '&.status-resolved': {
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.contrastText,
+  },
+  '&.status-closed': {
+    backgroundColor: theme.palette.grey[500],
+    color: theme.palette.getContrastText(theme.palette.grey[500]),
+  },
+  '&.priority-urgent': {
+    backgroundColor: theme.palette.error.main,
+    color: theme.palette.error.contrastText,
+  },
+  // Add other priority styles...
+}));
 
-const StyledBadge = styled(MuiBadge, {
-  shouldForwardProp: (prop) => !['variant', 'size'].includes(prop as string),
-})<BadgeProps>(({ theme, variant = 'info', size = 'medium' }) => {
-  const colorMap = {
-    success: theme.palette.success.main,
-    warning: theme.palette.warning.main,
-    error: theme.palette.error.main,
-    info: theme.palette.info.main,
-  } as const;
+export const Badge = ({
+  status,
+  priority,
+  label,
+  variant = 'filled',
+  className,
+  ...rest
+}: BadgeProps) => {
+  const classes = [className, status && `status-${status}`, priority && `priority-${priority}`]
+    .filter(Boolean)
+    .join(' ');
 
-  const textColorMap = {
-    success: theme.palette.success.contrastText,
-    warning: theme.palette.warning.contrastText,
-    error: theme.palette.error.contrastText,
-    info: theme.palette.info.contrastText,
-  } as const;
-
-  const sizeMap = {
-    small: {
-      minWidth: 16,
-      height: 16,
-      fontSize: '0.75rem',
-      padding: '0 4px',
-    },
-    medium: {
-      minWidth: 20,
-      height: 20,
-      fontSize: '0.85rem',
-      padding: '0 6px',
-    },
-    large: {
-      minWidth: 24,
-      height: 24,
-      fontSize: '0.95rem',
-      padding: '0 8px',
-    },
-  } as const;
-
-  return {
-    '& .MuiBadge-badge': {
-      backgroundColor: colorMap[variant as keyof typeof colorMap],
-      color: textColorMap[variant as keyof typeof textColorMap],
-      ...sizeMap[size],
-    },
+  // Explicitly type and construct the chip props
+  const chipProps: MuiChipProps = {
+    label,
+    variant,
+    className: classes,
   };
-});
 
-/**
- * Custom Badge component with predefined variants and sizes
- *
- * @param {BadgeProps} props - The props for the badge
- * @returns {JSX.Element} A customized badge component
- *
- * @example
- * <Badge
- *   variant="success"
- *   size="small"
- *   badgeContent={4}
- * >
- *   <NotificationsIcon />
- * </Badge>
- */
-export const Badge: React.FC<BadgeProps> = (props) => {
-  return <StyledBadge {...props} />;
+  // Spread remaining valid props
+  return (
+    <StyledChip
+      {...chipProps}
+      {...(rest as Partial<MuiChipProps>)}
+      $status={status}
+      $priority={priority}
+    />
+  );
 };

@@ -1,80 +1,36 @@
-import React from 'react';
-import {
-  Card as MuiCard,
-  CardProps as MuiCardProps,
-  CardContent,
-  Typography,
-  useTheme,
-  Skeleton,
-} from '@mui/material';
+import { Card as MuiCard, CardHeader, CardContent, CardActions } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import { CardProps } from './types';
 
-export interface CardProps extends Omit<MuiCardProps, 'title'> {
-  title?: string;
-  loading?: boolean;
-  error?: string;
-}
-
-/**
- * Custom Card component with loading and error states
- *
- * @param {CardProps} props - The props for the card component
- * @returns {JSX.Element} A customized card component
- *
- * @example
- * <Card
- *   title="Ticket Details"
- *   loading={isLoading}
- *   error={error}
- * >
- *   <TicketContent />
- * </Card>
- */
-export const Card: React.FC<CardProps> = ({
+export const Card = ({
   title,
-  loading = false,
+  subtitle,
+  loading,
   error,
+  actions,
+  headerActions,
   children,
+  className,
   ...props
-}) => {
-  const theme = useTheme();
-
-  if (loading) {
-    return (
-      <MuiCard {...props}>
-        <CardContent>
-          <Skeleton variant='text' width='60%' height={32} />
-          <Skeleton variant='rectangular' height={100} />
-        </CardContent>
-      </MuiCard>
-    );
-  }
-
-  if (error) {
-    return (
-      <MuiCard
-        {...props}
-        sx={{
-          borderColor: theme.palette.error.main,
-          ...props.sx,
-        }}
-      >
-        <CardContent>
-          <Typography color='error'>{error}</Typography>
-        </CardContent>
-      </MuiCard>
-    );
-  }
-
+}: CardProps) => {
   return (
-    <MuiCard {...props}>
-      {title && (
-        <CardContent>
-          <Typography variant='h6' component='h2'>
-            {title}
-          </Typography>
-        </CardContent>
+    <MuiCard className={className} {...props}>
+      {(title || subtitle || headerActions) && (
+        <CardHeader title={title} subheader={subtitle} action={headerActions} />
       )}
-      {children}
+      <CardContent>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+            <CircularProgress />
+          </div>
+        ) : error ? (
+          <Alert severity='error'>{error}</Alert>
+        ) : (
+          children
+        )}
+      </CardContent>
+      {actions && <CardActions>{actions}</CardActions>}
     </MuiCard>
   );
 };
