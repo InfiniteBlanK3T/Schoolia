@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { ChipProps } from '@mui/material';
 
-export type Status = 'new' | 'open' | 'in-progress' | 'resolved' | 'closed';
+export type Status = 'open' | 'pending' | 'resolved' | 'closed';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface BaseProps {

@@ -1,41 +1,63 @@
-import React from 'react';
-import { TextField, TextFieldProps } from '../inputs/TextField';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
-import { IconButton } from '../buttons/IconButton';
+import React, { useState, useEffect, useCallback } from 'react';
+import { debounce } from 'lodash';
+import { TextField, Autocomplete, CircularProgress } from '@mui/material';
+import { Search } from '@mui/icons-material';
+import { SearchInputProps } from './types';
 
-export interface SearchInputProps extends Omit<TextFieldProps, 'type'> {
-  onClear?: () => void;
-}
+export const SearchInput = ({
+  onSearch,
+  suggestions = [],
+  debounceMs = 300,
+  minChars = 2,
+  loading,
+  ...props
+}: SearchInputProps) => {
+  const [value, setValue] = useState('');
+  const [localSuggestions, setLocalSuggestions] = useState<string[]>([]);
 
-/**
- * Search input component with clear functionality
- *
- * @param {SearchInputProps} props - The props for the search input
- * @returns {JSX.Element} A search input component
- *
- * @example
- * <SearchInput
- *   placeholder="Search tickets..."
- *   value={searchQuery}
- *   onChange={handleChange}
- *   onClear={handleClear}
- * />
- */
-export const SearchInput: React.FC<SearchInputProps> = ({ onClear, value, ...props }) => {
-  return (
-    <TextField
-      {...props}
-      type='search'
-      value={value}
-      startIcon={<SearchIcon />}
-      endIcon={
-        value && onClear ? (
-          <IconButton aria-label='clear search' onClick={onClear} size='small'>
-            <ClearIcon />
-          </IconButton>
-        ) : undefined
+  const debouncedSearch = useCallback(
+    debounce((searchTerm: string) => {
+      if (searchTerm.length >= minChars) {
+        onSearch(searchTerm);
       }
+    }, debounceMs),
+    [onSearch, minChars]
+  );
+
+  useEffect(() => {
+    setLocalSuggestions(suggestions);
+  }, [suggestions]);
+
+  return (
+    <Autocomplete
+      freeSolo
+      options={localSuggestions}
+      inputValue={value}
+      onInputChange={(_, newValue) => {
+        setValue(newValue);
+        debouncedSearch(newValue);
+      }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          {...props}
+          InputProps={{
+            ...params.InputProps,
+            startAdornment: (
+              <>
+                <Search />
+                {params.InputProps.startAdornment}
+              </>
+            ),
+            endAdornment: (
+              <>
+                {loading && <CircularProgress size={20} />}
+                {params.InputProps.endAdornment}
+              </>
+            ),
+          }}
+        />
+      )}
     />
   );
 };

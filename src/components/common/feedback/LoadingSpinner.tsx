@@ -1,74 +1,51 @@
 import React from 'react';
-import { CircularProgress, Box, Typography, useTheme } from '@mui/material';
+import { LoadingSpinnerProps } from './types';
 
-export interface LoadingSpinnerProps {
-  size?: number;
-  message?: string;
-  fullScreen?: boolean;
-}
-
-/**
- * Loading spinner component with optional message and fullscreen mode
- *
- * @param {LoadingSpinnerProps} props - The props for the loading spinner
- * @returns {JSX.Element} A loading spinner component
- *
- * @example
- * <LoadingSpinner
- *   message="Loading tickets..."
- *   fullScreen
- * />
- */
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-  size = 40,
+  size = 'medium',
+  color,
+  overlay = false,
   message,
-  fullScreen = false,
+  customAnimation,
+  className = '',
+  style,
+  'aria-label': ariaLabel,
 }) => {
-  const theme = useTheme();
+  const sizeClasses = {
+    small: 'w-4 h-4',
+    medium: 'w-8 h-8',
+    large: 'w-12 h-12',
+  };
 
-  const content = (
-    <>
-      <CircularProgress size={size} />
-      {message && (
-        <Typography variant='body2' color='textSecondary' sx={{ mt: 2 }}>
-          {message}
-        </Typography>
-      )}
-    </>
+  const spinnerContent = (
+    <div
+      role='status'
+      aria-label={ariaLabel || 'Loading'}
+      className={`inline-flex flex-col items-center ${className}`}
+      style={style}
+    >
+      <div
+        className={`
+          animate-spin rounded-full border-4
+          border-gray-200
+          ${sizeClasses[size]}
+        `}
+        style={{
+          borderTopColor: color || '#3B82F6',
+          animation: customAnimation || 'spin 1s linear infinite',
+        }}
+      />
+      {message && <span className='mt-2 text-sm text-gray-600'>{message}</span>}
+    </div>
   );
 
-  if (fullScreen) {
+  if (overlay) {
     return (
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: theme.palette.background.default,
-          zIndex: theme.zIndex.modal,
-        }}
-      >
-        {content}
-      </Box>
+      <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+        {spinnerContent}
+      </div>
     );
   }
 
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        p: 3,
-      }}
-    >
-      {content}
-    </Box>
-  );
+  return spinnerContent;
 };

@@ -1,68 +1,81 @@
-import React from 'react';
-import {
-  Alert as MuiAlert,
-  AlertProps as MuiAlertProps,
-  Collapse,
-  IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import React, { useEffect, useState } from 'react';
+import { AlertProps } from './types';
+import { AlertTriangle, CheckCircle, Info, X, XCircle } from 'lucide-react';
 
-export interface AlertProps extends Omit<MuiAlertProps, 'onClose'> {
-  onClose?: () => void;
-  autoHideDuration?: number;
-}
+const severityIcons = {
+  error: XCircle,
+  warning: AlertTriangle,
+  info: Info,
+  success: CheckCircle,
+};
 
-/**
- * Custom Alert component with auto-hide functionality
- *
- * @param {AlertProps} props - The props for the alert
- * @returns {JSX.Element} A customized alert component
- *
- * @example
- * <Alert
- *   severity="success"
- *   onClose={handleClose}
- *   autoHideDuration={5000}
- * >
- *   Ticket created successfully!
- * </Alert>
- */
-export const Alert: React.FC<AlertProps> = ({ onClose, autoHideDuration, children, ...props }) => {
-  const [open, setOpen] = React.useState(true);
+export const Alert: React.FC<AlertProps> = ({
+  severity = 'info',
+  title,
+  content,
+  dismissible = true,
+  onDismiss,
+  icon,
+  action,
+  autoHideDuration,
+  className = '',
+  style,
+  'aria-label': ariaLabel,
+}) => {
+  const [isVisible, setIsVisible] = useState(true);
+  const Icon = (icon || severityIcons[severity]) as React.ElementType;
 
-  React.useEffect(() => {
-    if (autoHideDuration && onClose) {
+  useEffect(() => {
+    if (autoHideDuration && isVisible) {
       const timer = setTimeout(() => {
-        setOpen(false);
-        setTimeout(onClose, 300); // Wait for collapse animation
+        setIsVisible(false);
+        onDismiss?.();
       }, autoHideDuration);
-
       return () => clearTimeout(timer);
     }
-  }, [autoHideDuration, onClose]);
+  }, [autoHideDuration, isVisible, onDismiss]);
+
+  if (!isVisible) return null;
+
+  const severityClasses = {
+    error: 'bg-red-50 text-red-800 border-red-200',
+    warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+    info: 'bg-blue-50 text-blue-800 border-blue-200',
+    success: 'bg-green-50 text-green-800 border-green-200',
+  };
 
   return (
-    <Collapse in={open}>
-      <MuiAlert
-        {...props}
-        action={
-          onClose ? (
-            <IconButton
-              aria-label='close'
-              color='inherit'
-              size='small'
-              onClick={() => {
-                setOpen(false);
-                setTimeout(onClose, 300);
-              }}
-            >
-              <CloseIcon fontSize='inherit' />
-            </IconButton>
-          ) : null
-        }
-      >
-        {children}
-      </MuiAlert>
-    </Collapse>
+    <div
+      role='alert'
+      aria-label={ariaLabel || `${severity} alert`}
+      className={`
+        flex items-start p-4 mb-4 border rounded-lg
+        transition-all duration-300 ease-in-out
+        ${severityClasses[severity]}
+        ${className}
+      `}
+      style={style}
+    >
+      <div className='flex-shrink-0 mr-3'>
+        <Icon size={20} />
+      </div>
+      <div className='flex-1'>
+        {title && <h3 className='font-semibold mb-1'>{title}</h3>}
+        <div className='text-sm'>{content}</div>
+        {action && <div className='mt-2'>{action}</div>}
+      </div>
+      {dismissible && (
+        <button
+          onClick={() => {
+            setIsVisible(false);
+            onDismiss?.();
+          }}
+          className='ml-4 text-gray-400 hover:text-gray-600 focus:outline-none'
+          aria-label='Close alert'
+        >
+          <X size={16} />
+        </button>
+      )}
+    </div>
   );
 };

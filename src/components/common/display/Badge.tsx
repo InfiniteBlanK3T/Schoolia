@@ -14,7 +14,7 @@ interface StyledChipProps extends Omit<MuiChipProps, 'status'> {
 
 const StyledChip = styled(MuiChip, {
   shouldForwardProp: (prop) => typeof prop === 'string' && !prop.startsWith('$'),
-})<StyledChipProps>(({ theme, $status, $priority }) => ({
+})<StyledChipProps>(({ theme }) => ({
   '&.status-new': {
     backgroundColor: theme.palette.info.light,
     color: theme.palette.info.contrastText,

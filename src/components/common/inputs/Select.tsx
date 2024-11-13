@@ -1,57 +1,101 @@
-import React from 'react';
+import { useState } from 'react';
 import {
   Select as MuiSelect,
-  SelectProps as MuiSelectProps,
   MenuItem,
-  FormControl,
-  InputLabel,
-  FormHelperText,
+  ListSubheader,
+  TextField,
+  CircularProgress,
 } from '@mui/material';
+import { SelectProps, Option, OptionGroup } from './types';
 
-export interface SelectOption {
-  value: string | number;
-  label: string;
-}
+export const Select = ({
+  options,
+  value,
+  onChange,
+  multiple,
+  searchable,
+  loading,
+  loadingMore,
+  onLoadMore,
+  customOptionRender,
+  ...props
+}: SelectProps) => {
+  const [searchTerm, setSearchTerm] = useState('');
 
-export interface SelectProps extends Omit<MuiSelectProps, 'error'> {
-  options: SelectOption[];
-  label?: string;
-  error?: string;
-  helperText?: string;
-}
+  const isGrouped = (option: Option | OptionGroup): option is OptionGroup => {
+    return 'options' in option;
+  };
 
-/**
- * Custom Select component with enhanced options handling
- *
- * @param {SelectProps} props - The props for the select component
- * @returns {JSX.Element} A customized select component
- *
- * @example
- * <Select
- *   label="Priority"
- *   options={[
- *     { value: 'high', label: 'High' },
- *     { value: 'medium', label: 'Medium' },
- *     { value: 'low', label: 'Low' },
- *   ]}
- *   value={priority}
- *   onChange={handleChange}
- * />
- */
-export const Select: React.FC<SelectProps> = ({ options, label, error, helperText, ...props }) => {
-  const labelId = `${props.id || 'select'}-label`;
+  const filterOptions = (options: (Option | OptionGroup)[]) => {
+    if (!searchTerm) return options;
+
+    return options
+      .map((option) => {
+        if (isGrouped(option)) {
+          return {
+            ...option,
+            options: option.options.filter((opt) =>
+              opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+            ),
+          };
+        }
+        return option;
+      })
+      .filter((option) => {
+        if (isGrouped(option)) {
+          return option.options.length > 0;
+        }
+        return option.label.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+  };
+
+  const filteredOptions = filterOptions(options);
+
+  const renderOptions = (options: (Option | OptionGroup)[]) => {
+    return options.map((option) => {
+      if (isGrouped(option)) {
+        return [
+          <ListSubheader key={option.label}>{option.label}</ListSubheader>,
+          ...option.options.map((opt) => renderOption(opt)),
+        ];
+      }
+      return renderOption(option as Option);
+    });
+  };
+
+  const renderOption = (option: Option) => {
+    return (
+      <MenuItem key={option.value} value={option.value} disabled={option.disabled}>
+        {customOptionRender ? customOptionRender(option) : option.label}
+      </MenuItem>
+    );
+  };
 
   return (
-    <FormControl fullWidth error={!!error} size={props.size} disabled={props.disabled}>
-      {label && <InputLabel id={labelId}>{label}</InputLabel>}
-      <MuiSelect {...props} labelId={labelId} label={label}>
-        {options.map((option) => (
-          <MenuItem key={option.value} value={option.value}>
-            {option.label}
-          </MenuItem>
-        ))}
-      </MuiSelect>
-      {(error || helperText) && <FormHelperText>{error || helperText}</FormHelperText>}
-    </FormControl>
+    <MuiSelect
+      multiple={multiple}
+      value={value}
+      onChange={(e) => onChange(e.target.value as string | string[])}
+      {...props}
+    >
+      {searchable && (
+        <TextField
+          fullWidth
+          size='small'
+          placeholder='Search...'
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          sx={{ m: 1 }}
+        />
+      )}
+      {renderOptions(filteredOptions)}
+      {loadingMore && (
+        <MenuItem disabled>
+          <CircularProgress size={20} />
+          Loading more...
+        </MenuItem>
+      )}
+    </MuiSelect>
   );
 };
